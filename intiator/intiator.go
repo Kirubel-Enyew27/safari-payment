@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/Kirubel-Enyew27/safari-payment/internal/handler/middleware"
-	"github.com/Kirubel-Enyew27/safari-payment/internal/models/persistencedb"
+	"github.com/Kirubel-Enyew27/safari-payment/internal/model/persistencedb"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
