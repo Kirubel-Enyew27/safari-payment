@@ -13,6 +13,7 @@ import (
 
 	"github.com/Kirubel-Enyew27/safari-payment/internal/handler/middleware"
 	"github.com/Kirubel-Enyew27/safari-payment/internal/model/persistencedb"
+	"github.com/Kirubel-Enyew27/safari-payment/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -57,7 +58,8 @@ func Intiate() {
 	logger.Info("storage layer initialized")
 
 	logger.Info("initializing service layer")
-	service := InitService(storage, logger)
+	token, err := utils.GetSafariAccessToken()
+	service := InitService(storage, token, logger)
 	logger.Info("service layer initialized")
 
 	logger.Info("initializing handler")
