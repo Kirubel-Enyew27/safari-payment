@@ -1,9 +1,19 @@
 package payment
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/Kirubel-Enyew27/safari-payment/internal/errors"
 	"github.com/Kirubel-Enyew27/safari-payment/internal/model/dto"
 	"github.com/Kirubel-Enyew27/safari-payment/internal/service"
 	"github.com/Kirubel-Enyew27/safari-payment/internal/storage"
+	"github.com/Kirubel-Enyew27/safari-payment/utils"
 	"go.uber.org/zap"
 )
 
@@ -20,4 +30,72 @@ func InitService(paymentStorage storage.Payment, token dto.AccessTokenResponse, 
 		logger:  log,
 	}
 
+}
+
+func (p *payment) AcceptPayment(ctx context.Context, payload dto.AcceptPaymentRequest) (dto.AcceptPaymentResponse, error) {
+	token, err := utils.GetSafariAccessToken()
+	if err != nil {
+		err := errors.ErrAccessToken.Wrap(err, "failed to generate access token")
+		p.logger.Error("failed to generate access token", zap.Error(err))
+		return dto.AcceptPaymentResponse{}, err
+	}
+
+	shortcode := os.Getenv("SAFARI_BUSINESS_SHORT_CODE")
+	password := os.Getenv("SAFARI_PASSWORD")
+	if shortcode == "" || password == "" {
+		err := errors.ErrInternalServerError.New("fialed to read business short code or password")
+		p.logger.Error("failed to read business short code or password from config", zap.String("short code", shortcode), zap.String("password", password))
+		return dto.AcceptPaymentResponse{}, err
+	}
+	timestamp := time.Now().Format("20060102150405")
+
+	payload.BusinessShortCode = shortcode
+	payload.Password = password
+	payload.Timestamp = timestamp
+	payload.PartyB = shortcode
+
+	resp, err := p.processRequest(ctx, payload, token.AccessToken)
+	if err != nil {
+		return dto.AcceptPaymentResponse{}, err
+	}
+
+	return resp, nil
+
+}
+
+func (p *payment) processRequest(ctx context.Context, payload dto.AcceptPaymentRequest, token string) (dto.AcceptPaymentResponse, error) {
+	jsonPayload, _ := json.Marshal(payload)
+	safari_base_url := os.Getenv("SAFARI_BASE_URL")
+	if safari_base_url == "" {
+		err := errors.ErrInternalServerError.New("fialed to read base url")
+		p.logger.Error("failed to read safari base url from config", zap.String("safari_base_url", safari_base_url))
+		return dto.AcceptPaymentResponse{}, err
+	}
+	req, err := http.NewRequestWithContext(ctx, "POST", safari_base_url+"/mpesa/stkpush/v3/processrequest", bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		err := errors.ErrCreateRequest.Wrap(err, "fialed to create request")
+		p.logger.Error("fialed to create request to safari", zap.Error(err))
+		return dto.AcceptPaymentResponse{}, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		err := errors.ErrCreateRequest.Wrap(err, "fialed to send request")
+		p.logger.Error("fialed to send request to safari", zap.Error(err))
+		return dto.AcceptPaymentResponse{}, err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	var stkResp dto.AcceptPaymentResponse
+	err = json.Unmarshal(body, &stkResp)
+	if err != nil {
+		err := errors.ErrInternalServerError.Wrap(err, "failed to unmarshal response")
+		p.logger.Error("failed to unmarshal response", zap.Error(err))
+		return dto.AcceptPaymentResponse{}, err
+	}
+
+	return stkResp, nil
 }
