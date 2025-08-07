@@ -51,3 +51,25 @@ func (p *payment) AcceptPayment(c *gin.Context) {
 	resonse.SendSuccessResponse(c, http.StatusOK, resp, nil)
 
 }
+
+func (p *payment) WebHook(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, p.contextTimeout)
+	defer cancel()
+
+	var payload map[string]any
+	if err := c.BindJSON(&payload); err != nil {
+		err := errors.ErrBadRequest.Wrap(err, "invalid ebhook format")
+		p.logger.Error("invalid ebhook format", zap.Error(err))
+		_ = c.Error(err)
+		return
+	}
+	p.logger.Info("Received Callback--->:", zap.Any("payload", payload))
+
+	resp, err := p.paymentService.StorePayment(ctx, payload)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	resonse.SendSuccessResponse(c, http.StatusOK, resp, nil)
+}
