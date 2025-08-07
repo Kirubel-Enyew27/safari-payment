@@ -99,3 +99,45 @@ func (p *payment) processRequest(ctx context.Context, payload dto.AcceptPaymentR
 
 	return stkResp, nil
 }
+
+func (p *payment) StorePayment(ctx context.Context, payload map[string]any) (dto.Payment, error) {
+	body, ok := payload["Body"].(map[string]any)
+	if !ok {
+		err := errors.ErrFailedPayment.New("invalid structure")
+		p.logger.Error("invalid structure", zap.Any("body", body))
+		return dto.Payment{}, err
+	}
+
+	stkCallback := body["stkCallback"].(map[string]any)
+	resultCode := int(stkCallback["ResultCode"].(float64))
+	resultDesc := stkCallback["ResultDesc"].(string)
+
+	if resultCode != 0 {
+		err := errors.ErrFailedPayment.New("payment failed")
+		p.logger.Error("payment failed", zap.Int("resultCode", resultCode), zap.String("resultDesc", resultDesc))
+		return dto.Payment{}, err
+	}
+
+	callbackMetadata := stkCallback["CallbackMetadata"].(map[string]any)["Item"].([]any)
+	data := map[string]any{}
+	for _, item := range callbackMetadata {
+		entry := item.(map[string]any)
+		name := entry["Name"].(string)
+		value := entry["Value"]
+		data[name] = value
+	}
+
+	payment := dto.Payment{
+		CheckoutRequestID: stkCallback["CheckoutRequestID"].(string),
+		MerchantRequestID: stkCallback["MerchantRequestID"].(string),
+		PhoneNumber:       data["PhoneNumber"].(string),
+		MpesaReceipt:      data["MpesaReceiptNumber"].(string),
+		Amount:            data["Amount"].(float64),
+		TransactionDate:   utils.ParseMpesaDate(data["TransactionDate"]),
+		ResultCode:        resultCode,
+		ResultDesc:        resultDesc,
+	}
+
+	return p.storage.SavePayment(ctx, payment)
+
+}

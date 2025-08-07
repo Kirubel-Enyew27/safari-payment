@@ -8,4 +8,5 @@ import (
 
 type Payment interface {
 	AcceptPayment(ctx context.Context, req dto.AcceptPaymentRequest) (dto.AcceptPaymentResponse, error)
+	StorePayment(ctx context.Context, payload map[string]any) (dto.Payment, error)
 }
