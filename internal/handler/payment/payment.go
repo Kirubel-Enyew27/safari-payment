@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type customer struct {
+type payment struct {
 	logger         *zap.Logger
 	paymentService service.Payment
 	contextTimeout time.Duration
@@ -17,7 +17,7 @@ type customer struct {
 func InitHandler(paymentService service.Payment, contextTimeout time.Duration,
 	log *zap.Logger) handler.Payment {
 
-	return &customer{
+	return &payment{
 		logger:         log,
 		paymentService: paymentService,
 		contextTimeout: contextTimeout,
