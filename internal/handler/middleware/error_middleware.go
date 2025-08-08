@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/Kirubel-Enyew27/safari-payment/internal/errors"
-	response2 "github.com/Kirubel-Enyew27/safari-payment/internal/model/resonse"
+	response2 "github.com/Kirubel-Enyew27/safari-payment/internal/model/response"
 
 	"github.com/joomcode/errorx"
 

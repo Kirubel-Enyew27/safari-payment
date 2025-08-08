@@ -8,7 +8,7 @@ import (
 	"github.com/Kirubel-Enyew27/safari-payment/internal/errors"
 	"github.com/Kirubel-Enyew27/safari-payment/internal/handler"
 	"github.com/Kirubel-Enyew27/safari-payment/internal/model/dto"
-	"github.com/Kirubel-Enyew27/safari-payment/internal/model/resonse"
+	"github.com/Kirubel-Enyew27/safari-payment/internal/model/response"
 	"github.com/Kirubel-Enyew27/safari-payment/internal/service"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -48,7 +48,7 @@ func (p *payment) AcceptPayment(c *gin.Context) {
 		return
 	}
 
-	resonse.SendSuccessResponse(c, http.StatusOK, resp, nil)
+	response.SendSuccessResponse(c, http.StatusOK, resp, nil)
 
 }
 
@@ -71,5 +71,5 @@ func (p *payment) WebHook(c *gin.Context) {
 		return
 	}
 
-	resonse.SendSuccessResponse(c, http.StatusOK, resp, nil)
+	response.SendSuccessResponse(c, http.StatusOK, resp, nil)
 }
