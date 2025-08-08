@@ -33,13 +33,6 @@ func InitService(paymentStorage storage.Payment, token dto.AccessTokenResponse, 
 }
 
 func (p *payment) AcceptPayment(ctx context.Context, payload dto.AcceptPaymentRequest) (dto.AcceptPaymentResponse, error) {
-	token, err := utils.GetSafariAccessToken()
-	if err != nil {
-		err := errors.ErrAccessToken.Wrap(err, "failed to generate access token")
-		p.logger.Error("failed to generate access token", zap.Error(err))
-		return dto.AcceptPaymentResponse{}, err
-	}
-
 	shortcode := os.Getenv("SAFARI_BUSINESS_SHORT_CODE")
 	password := os.Getenv("SAFARI_PASSWORD")
 	if shortcode == "" || password == "" {
@@ -54,7 +47,29 @@ func (p *payment) AcceptPayment(ctx context.Context, payload dto.AcceptPaymentRe
 	payload.Timestamp = timestamp
 	payload.PartyB = shortcode
 
-	resp, err := p.processRequest(ctx, payload, token.AccessToken)
+	tokenExpirationDuration, err := time.ParseDuration(p.token.ExpiresIn)
+	if err != nil {
+		err := errors.ErrUnExpectedError.Wrap(err, "failed to parse token expiration duration")
+		p.logger.Error("Failed to parse token expiration",
+			zap.String("expires_in", p.token.ExpiresIn),
+			zap.Error(err),
+		)
+		return dto.AcceptPaymentResponse{}, err
+	}
+
+	// Add (5 seconds) to prevent using expired token
+	expired := time.Since(p.token.IssuedAt.Add(5*time.Second)) > tokenExpirationDuration
+	if expired || p.token.AccessToken == "" {
+		newToken, err := utils.GetSafariAccessToken()
+		if err != nil {
+			wrappedErr := errors.ErrAccessToken.Wrap(err, "failed to refresh access token")
+			p.logger.Error("Failed to refresh access token", zap.Error(wrappedErr))
+			return dto.AcceptPaymentResponse{}, wrappedErr
+		}
+		p.token = newToken
+	}
+
+	resp, err := p.processRequest(ctx, payload, p.token.AccessToken)
 	if err != nil {
 		return dto.AcceptPaymentResponse{}, err
 	}
