@@ -87,6 +87,7 @@ func (p *payment) GetPayments(c *gin.Context) {
 	}{Limit: &limit, Offset: &offset})
 
 	if err != nil {
+		p.logger.Error("invalid query parameters", zap.Error(err))
 		_ = c.Error(errors.ErrBadRequest.Wrap(err, "invalid query parameters"))
 		return
 	}
