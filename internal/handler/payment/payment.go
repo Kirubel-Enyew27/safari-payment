@@ -73,3 +73,16 @@ func (p *payment) WebHook(c *gin.Context) {
 
 	response.SendSuccessResponse(c, http.StatusOK, resp, nil)
 }
+
+func (p *payment) GetPayments(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), p.contextTimeout)
+	defer cancel()
+
+	payments, err := p.paymentService.GetPayments(ctx)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	response.SendSuccessResponse(c, http.StatusOK, payments, nil)
+}

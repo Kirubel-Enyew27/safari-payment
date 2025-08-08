@@ -8,6 +8,7 @@ import (
 	"github.com/Kirubel-Enyew27/safari-payment/internal/model/dto"
 	"github.com/Kirubel-Enyew27/safari-payment/internal/model/persistencedb"
 	"github.com/Kirubel-Enyew27/safari-payment/internal/storage"
+	"github.com/jackc/pgx/v4"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
@@ -58,4 +59,36 @@ func (p *payment) SavePayment(ctx context.Context, payment dto.Payment) (dto.Pay
 	}
 
 	return savedPayment, nil
+}
+
+func (p *payment) GetPayments(ctx context.Context) ([]dto.Payment, error) {
+	payments, err := p.db.Queries.ListPayments(ctx)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			p.log.Error("failed to get payments", zap.Error(err))
+			return nil, errors.ErrUnableToGet.Wrap(err, "payments not found")
+		}
+		p.log.Error("failed to get payments", zap.Error(err))
+		return nil, errors.ErrUnableToGet.Wrap(err, "failed to get payments")
+	}
+
+	fetchedPayments := make([]dto.Payment, len(payments))
+
+	for i, payment := range payments {
+		fetchedAmount, _ := payment.Amount.Float64()
+		fetchedPayments[i] = dto.Payment{
+			ID:                payment.ID,
+			CheckoutRequestID: payment.CheckoutRequestID,
+			MerchantRequestID: payment.MerchantRequestID,
+			PhoneNumber:       payment.PhoneNumber,
+			Amount:            fetchedAmount,
+			MpesaReceipt:      payment.MpesaReceipt,
+			TransactionDate:   payment.TransactionDate,
+			ResultCode:        int(payment.ResultCode),
+			ResultDesc:        payment.ResultDesc,
+			CreatedAt:         payment.CreatedAt.Time,
+		}
+	}
+
+	return fetchedPayments, nil
 }

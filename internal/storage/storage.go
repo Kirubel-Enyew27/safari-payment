@@ -8,4 +8,5 @@ import (
 
 type Payment interface {
 	SavePayment(ctx context.Context, payment dto.Payment) (dto.Payment, error)
+	GetPayments(ctx context.Context) ([]dto.Payment, error)
 }

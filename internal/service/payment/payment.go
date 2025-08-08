@@ -204,3 +204,7 @@ func (p *payment) StorePayment(ctx context.Context, payload map[string]any) (dto
 	return p.storage.SavePayment(ctx, payment)
 
 }
+
+func (p *payment) GetPayments(ctx context.Context) ([]dto.Payment, error) {
+	return p.storage.GetPayments(ctx)
+}
