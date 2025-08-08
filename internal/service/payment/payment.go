@@ -47,7 +47,7 @@ func (p *payment) AcceptPayment(ctx context.Context, payload dto.AcceptPaymentRe
 	payload.Timestamp = timestamp
 	payload.PartyB = shortcode
 
-	tokenExpirationDuration, err := time.ParseDuration(p.token.ExpiresIn)
+	tokenExpirationDuration, err := time.ParseDuration(p.token.ExpiresIn + "s")
 	if err != nil {
 		err := errors.ErrUnExpectedError.Wrap(err, "failed to parse token expiration duration")
 		p.logger.Error("Failed to parse token expiration",
