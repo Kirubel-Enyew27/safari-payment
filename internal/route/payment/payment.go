@@ -25,6 +25,12 @@ func InitRoute(group *gin.RouterGroup, h handler.Payment,
 			Handler:     h.WebHook,
 			Middlewares: []gin.HandlerFunc{},
 		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/payments",
+			Handler:     h.GetPayments,
+			Middlewares: []gin.HandlerFunc{},
+		},
 	}
 
 	route.RegisterRoute(group, paymentRoutes, log)
