@@ -208,3 +208,7 @@ func (p *payment) StorePayment(ctx context.Context, payload map[string]any) (dto
 func (p *payment) GetPayments(ctx context.Context, limit int32, offset int32) ([]dto.Payment, error) {
 	return p.storage.GetPayments(ctx, limit, offset)
 }
+
+func (p *payment) GetPaymentByCheckoutRequestID(ctx context.Context, id string) (dto.Payment, error) {
+	return p.storage.GetPaymentByCheckoutRequestID(ctx, id)
+}

@@ -6,4 +6,5 @@ type Payment interface {
 	AcceptPayment(c *gin.Context)
 	WebHook(c *gin.Context)
 	GetPayments(c *gin.Context)
+	GetPaymentByCheckoutRequestID(c *gin.Context)
 }

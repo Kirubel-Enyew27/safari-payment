@@ -93,3 +93,32 @@ func (p *payment) GetPayments(ctx context.Context, limit int32, offset int32) ([
 
 	return fetchedPayments, nil
 }
+
+func (p *payment) GetPaymentByCheckoutRequestID(ctx context.Context, id string) (dto.Payment, error) {
+	payment, err := p.db.Queries.GetPaymentByCheckoutRequestID(ctx, id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			p.log.Error("failed to get user by id", zap.Error(err))
+			return dto.Payment{}, errors.ErrNoRecordFound.Wrap(err, "user not found")
+		}
+		p.log.Error("failed to get user by id", zap.String("id", id), zap.Error(err))
+		return dto.Payment{}, errors.ErrUnableToGet.Wrap(err, "failed to get user")
+	}
+
+	fetchedAmount, _ := payment.Amount.Float64()
+
+	fetchedPayment := dto.Payment{
+		ID:                payment.ID,
+		CheckoutRequestID: payment.CheckoutRequestID,
+		MerchantRequestID: payment.MerchantRequestID,
+		PhoneNumber:       payment.PhoneNumber,
+		Amount:            fetchedAmount,
+		MpesaReceipt:      payment.MpesaReceipt,
+		TransactionDate:   payment.TransactionDate,
+		ResultCode:        int(payment.ResultCode),
+		ResultDesc:        payment.ResultDesc,
+		CreatedAt:         payment.CreatedAt.Time,
+	}
+
+	return fetchedPayment, nil
+}

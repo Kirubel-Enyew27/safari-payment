@@ -100,3 +100,23 @@ func (p *payment) GetPayments(c *gin.Context) {
 
 	response.SendSuccessResponse(c, http.StatusOK, payments, nil)
 }
+
+func (p *payment) GetPaymentByCheckoutRequestID(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), p.contextTimeout)
+	defer cancel()
+
+	checkout_request_id := c.Param("id")
+	if checkout_request_id == "" {
+		p.logger.Error("empty url parameter", zap.String("url parameter value", checkout_request_id))
+		_ = c.Error(errors.ErrBadRequest.New("empty url parameter"))
+		return
+	}
+	payment, err := p.paymentService.GetPaymentByCheckoutRequestID(ctx, checkout_request_id)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	response.SendSuccessResponse(c, http.StatusOK, payment, nil)
+
+}
