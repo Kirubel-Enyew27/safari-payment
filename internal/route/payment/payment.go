@@ -31,6 +31,12 @@ func InitRoute(group *gin.RouterGroup, h handler.Payment,
 			Handler:     h.GetPayments,
 			Middlewares: []gin.HandlerFunc{},
 		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/payment/:id",
+			Handler:     h.GetPaymentByCheckoutRequestID,
+			Middlewares: []gin.HandlerFunc{},
+		},
 	}
 
 	route.RegisterRoute(group, paymentRoutes, log)
