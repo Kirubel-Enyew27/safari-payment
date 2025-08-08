@@ -53,19 +53,24 @@ var Error = []ErrorType{
 		StatusCode: http.StatusUnauthorized,
 		ErrorType:  ErrAccessToken,
 	},
+	{
+		StatusCode: http.StatusInternalServerError,
+		ErrorType:  ErrExternalService,
+	},
 }
 
 // list of error namespaces
 var (
-	databaseError    = errorx.NewNamespace("database error")
-	resourceNotFound = errorx.NewNamespace("not found")
-	unauthorized     = errorx.NewNamespace("unable to get access token")
-	AccessDenied     = errorx.RegisterTrait("You are not authorized to perform the action")
-	Ineligible       = errorx.RegisterTrait("You are not eligible to perform the action")
-	serverError      = errorx.NewNamespace("server error")
-	badRequest       = errorx.NewNamespace("bad request error")
-	requestError     = errorx.NewNamespace("error while communicating with safari")
-	paymentErr       = errorx.NewNamespace("error while accepting payment")
+	databaseError        = errorx.NewNamespace("database error")
+	resourceNotFound     = errorx.NewNamespace("not found")
+	unauthorized         = errorx.NewNamespace("unable to get access token")
+	AccessDenied         = errorx.RegisterTrait("You are not authorized to perform the action")
+	Ineligible           = errorx.RegisterTrait("You are not eligible to perform the action")
+	serverError          = errorx.NewNamespace("server error")
+	badRequest           = errorx.NewNamespace("bad request error")
+	requestError         = errorx.NewNamespace("error while communicating with safari")
+	paymentErr           = errorx.NewNamespace("error while accepting payment")
+	externalServiceError = errorx.NewNamespace("external service error")
 )
 
 // list of errors types in all of the above namespaces
@@ -82,4 +87,5 @@ var (
 	ErrCreateRequest       = errorx.NewType(requestError, "failed to create request")
 	ErrFailedPayment       = errorx.NewType(paymentErr, "payment faled")
 	ErrAccessToken         = errorx.NewType(unauthorized, "unauthorized")
+	ErrExternalService     = errorx.NewType(externalServiceError, "service error")
 )
