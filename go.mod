@@ -3,6 +3,7 @@ module github.com/Kirubel-Enyew27/safari-payment
 go 1.24.0
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang-migrate/migrate/v4 v4.18.3

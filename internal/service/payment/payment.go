@@ -14,6 +14,7 @@ import (
 	"github.com/Kirubel-Enyew27/safari-payment/internal/service"
 	"github.com/Kirubel-Enyew27/safari-payment/internal/storage"
 	"github.com/Kirubel-Enyew27/safari-payment/utils"
+	"github.com/avast/retry-go"
 	"go.uber.org/zap"
 )
 
@@ -87,35 +88,75 @@ func (p *payment) processRequest(ctx context.Context, payload dto.AcceptPaymentR
 	}
 
 	jsonPayload, _ := json.Marshal(payload)
-	safari_base_url := os.Getenv("SAFARI_BASE_URL")
-	if safari_base_url == "" {
-		err := errors.ErrInternalServerError.New("fialed to read base url")
-		p.logger.Error("failed to read safari base url from config", zap.String("safari_base_url", safari_base_url))
-		return dto.AcceptPaymentResponse{}, err
-	}
-	req, err := http.NewRequestWithContext(ctx, "POST", safari_base_url+"/mpesa/stkpush/v3/processrequest", bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		err := errors.ErrCreateRequest.Wrap(err, "fialed to create request")
-		p.logger.Error("fialed to create request to safari", zap.Error(err))
-		return dto.AcceptPaymentResponse{}, err
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		err := errors.ErrCreateRequest.Wrap(err, "fialed to send request")
-		p.logger.Error("fialed to send request to safari", zap.Error(err))
+	safariBaseURL := os.Getenv("SAFARI_BASE_URL")
+	if safariBaseURL == "" {
+		err := errors.ErrInternalServerError.New("failed to read base url")
+		p.logger.Error("missing SAFARI_BASE_URL in environment", zap.String("safari_base_url", safariBaseURL))
 		return dto.AcceptPaymentResponse{}, err
 	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
 
-	var stkResp dto.AcceptPaymentResponse
-	err = json.Unmarshal(body, &stkResp)
+	url := safariBaseURL + "/mpesa/stkpush/v3/processrequest"
+
+	var (
+		resp     *http.Response
+		stkResp  dto.AcceptPaymentResponse
+		respBody []byte
+	)
+
+	err = retry.Do(
+		func() error {
+			req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonPayload))
+			if err != nil {
+				p.logger.Error("failed to create request", zap.Error(err))
+				return retry.Unrecoverable(errors.ErrCreateRequest.Wrap(err, "failed to create request"))
+			}
+
+			req.Header.Set("Authorization", "Bearer "+token)
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err = http.DefaultClient.Do(req)
+			if err != nil {
+				p.logger.Warn("temporary failure sending request to SafariCom", zap.Error(err))
+				return err
+			}
+
+			// Retry on 5xx errors
+			if resp.StatusCode >= 500 {
+				p.logger.Warn("received 5xx from SafariCom", zap.Int("status_code", resp.StatusCode))
+				return errors.ErrExternalService.New("server error: retrying")
+			}
+
+			// Don't retry on client errors
+			if resp.StatusCode >= 400 {
+				p.logger.Error("received 4xx from SafariCom", zap.Int("status_code", resp.StatusCode))
+				return retry.Unrecoverable(errors.ErrCreateRequest.New("client error from SafariCom"))
+			}
+
+			respBody, err = io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				p.logger.Error("failed to read response body", zap.Error(err))
+				return errors.ErrInternalServerError.Wrap(err, "failed to read body")
+			}
+
+			err = json.Unmarshal(respBody, &stkResp)
+			if err != nil {
+				p.logger.Error("failed to unmarshal SafariCom response", zap.Error(err), zap.ByteString("body", respBody))
+				return errors.ErrInternalServerError.Wrap(err, "unmarshal failed")
+			}
+
+			return nil
+		},
+		retry.Attempts(3),
+		retry.DelayType(retry.BackOffDelay),
+		retry.Delay(1*time.Second),
+		retry.OnRetry(func(n uint, err error) {
+			p.logger.Warn("retrying SafariCom request", zap.Uint("attempt", n+1), zap.Error(err))
+		}),
+	)
+
 	if err != nil {
-		err := errors.ErrInternalServerError.Wrap(err, "failed to unmarshal response")
-		p.logger.Error("failed to unmarshal response", zap.Error(err))
 		return dto.AcceptPaymentResponse{}, err
 	}
 
