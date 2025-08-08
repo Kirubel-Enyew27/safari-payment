@@ -1,10 +1,10 @@
-## Safari Payment Service - Merchant-Initiated Payment API
+# Safari Payment Service - Merchant-Initiated Payment API
 
 This project implements a **merchant-initiated M-Pesa (Safari) payment service** in Go. It integrates with the [Safaricom Ethiopia Sandbox](https://developer.safaricom.et) to initiate and process payments, storing confirmed transactions in a PostgreSQL database.
 
 ---
 
-## Features
+# Features
 
 - M-Pesa API Integration – Supports merchant-initiated payment requests via Safaricom API.
 - PostgreSQL Database – Persists successful payments via Dockerized PostgreSQL.
@@ -28,7 +28,7 @@ Prerequisites
 
 ---
 
-## Configuration
+# Configuration
 
 Create a `.env` file under `config/` directory with the following environment variables:
 
@@ -62,7 +62,7 @@ SAFARI_BASE_URL=https://apisandbox.safaricom.et
 SAFARI_CALLBACK_URL=https://your-ngrok-url.ngrok-free.app/v1/payment/webhook
 ```
 
-## How to run
+# How to run
 
 # 1. Clone the repository
 
@@ -85,7 +85,7 @@ go run cmd/main.go migrate
 
 go run cmd/main.go
 
-## Testing the webhook
+# Testing the webhook
 
 Use Ngrok to expose your local server to the internet:
 
