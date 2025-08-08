@@ -79,6 +79,13 @@ func (p *payment) AcceptPayment(ctx context.Context, payload dto.AcceptPaymentRe
 }
 
 func (p *payment) processRequest(ctx context.Context, payload dto.AcceptPaymentRequest, token string) (dto.AcceptPaymentResponse, error) {
+	err := payload.Validate()
+	if err != nil {
+		err := errors.ErrCreateRequest.Wrap(err, "validation failed")
+		p.logger.Error("validation failed", zap.Error(err))
+		return dto.AcceptPaymentResponse{}, err
+	}
+
 	jsonPayload, _ := json.Marshal(payload)
 	safari_base_url := os.Getenv("SAFARI_BASE_URL")
 	if safari_base_url == "" {

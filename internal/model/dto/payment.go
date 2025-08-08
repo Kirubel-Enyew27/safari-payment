@@ -1,8 +1,11 @@
 package dto
 
 import (
+	"regexp"
 	"time"
 
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/google/uuid"
 )
 
@@ -50,4 +53,47 @@ type Payment struct {
 	ResultCode        int       `db:"result_code"`
 	ResultDesc        string    `db:"result_desc"`
 	CreatedAt         time.Time `db:"created_at"`
+}
+
+func (acp *AcceptPaymentRequest) Validate() error {
+	err := validation.ValidateStruct(acp,
+		validation.Field(&acp.MerchantRequestID, validation.Required),
+		validation.Field(&acp.BusinessShortCode,
+			validation.Required,
+			validation.Length(5, 6),
+			is.Digit),
+		validation.Field(&acp.Password, validation.Required),
+		validation.Field(&acp.Timestamp,
+			validation.Required,
+			is.Digit),
+		validation.Field(&acp.TransactionType,
+			validation.Required,
+			validation.In("CustomerPayBillOnline", "CustomerBuyGoodsOnline")),
+		validation.Field(&acp.Amount,
+			validation.Required,
+			validation.Min(1)),
+		validation.Field(&acp.PartyA,
+			validation.Required,
+			validation.Length(12, 12),
+			validation.Match(regexp.MustCompile(`^2517\d{8}$`)).Error("must be a valid 12-digit Safaricom phone number starting with 2517")),
+		validation.Field(&acp.PartyB,
+			validation.Required,
+			validation.Length(5, 6),
+			is.Digit),
+		validation.Field(&acp.PhoneNumber,
+			validation.Required,
+			validation.Length(12, 12),
+			validation.Match(regexp.MustCompile(`^2517\d{8}$`)).Error("must be a valid 12-digit Safaricom phone number starting with 2517")),
+		validation.Field(&acp.CallBackURL,
+			validation.Required,
+			is.URL),
+		validation.Field(&acp.AccountReference,
+			validation.Required,
+			validation.Length(1, 12)),
+		validation.Field(&acp.TransactionDesc,
+			validation.Required,
+			validation.Length(1, 13)),
+	)
+
+	return err
 }
