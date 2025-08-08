@@ -61,8 +61,9 @@ func (p *payment) SavePayment(ctx context.Context, payment dto.Payment) (dto.Pay
 	return savedPayment, nil
 }
 
-func (p *payment) GetPayments(ctx context.Context) ([]dto.Payment, error) {
-	payments, err := p.db.Queries.ListPayments(ctx)
+func (p *payment) GetPayments(ctx context.Context, limit int32, offset int32) ([]dto.Payment, error) {
+	pagination := db.ListPaymentsParams{Limit: limit, Offset: offset}
+	payments, err := p.db.Queries.ListPayments(ctx, pagination)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			p.log.Error("failed to get payments", zap.Error(err))

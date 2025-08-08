@@ -78,7 +78,20 @@ func (p *payment) GetPayments(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), p.contextTimeout)
 	defer cancel()
 
-	payments, err := p.paymentService.GetPayments(ctx)
+	var limit int32 = 10
+	var offset int32 = 0
+
+	err := c.ShouldBindQuery(&struct {
+		Limit  *int32 `form:"limit"`
+		Offset *int32 `form:"offset"`
+	}{Limit: &limit, Offset: &offset})
+
+	if err != nil {
+		_ = c.Error(errors.ErrBadRequest.Wrap(err, "invalid query parameters"))
+		return
+	}
+
+	payments, err := p.paymentService.GetPayments(ctx, limit, offset)
 	if err != nil {
 		_ = c.Error(err)
 		return

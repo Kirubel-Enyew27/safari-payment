@@ -38,10 +38,16 @@ func (q *Queries) GetPaymentByCheckoutRequestID(ctx context.Context, checkoutReq
 const listPayments = `-- name: ListPayments :many
 SELECT id, checkout_request_id, merchant_request_id, phone_number, amount, mpesa_receipt, transaction_date, result_code, result_desc, created_at FROM payments
 ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
 `
 
-func (q *Queries) ListPayments(ctx context.Context) ([]Payment, error) {
-	rows, err := q.db.Query(ctx, listPayments)
+type ListPaymentsParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) ListPayments(ctx context.Context, arg ListPaymentsParams) ([]Payment, error) {
+	rows, err := q.db.Query(ctx, listPayments, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

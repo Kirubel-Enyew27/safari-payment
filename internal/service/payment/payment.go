@@ -205,6 +205,6 @@ func (p *payment) StorePayment(ctx context.Context, payload map[string]any) (dto
 
 }
 
-func (p *payment) GetPayments(ctx context.Context) ([]dto.Payment, error) {
-	return p.storage.GetPayments(ctx)
+func (p *payment) GetPayments(ctx context.Context, limit int32, offset int32) ([]dto.Payment, error) {
+	return p.storage.GetPayments(ctx, limit, offset)
 }
